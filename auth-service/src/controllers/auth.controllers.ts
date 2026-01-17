@@ -58,13 +58,16 @@ export const signIn = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const user = await getUserByEmail(email).catch(() => null);
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
+
+    if (!user || !user.password) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
-    const isMatch = await bcrypt.compare(password, user.password || "");
+
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Wrong password" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
+
     const token = await genToken(user._id.toString());
 
     res.cookie("token", token, {
@@ -75,7 +78,7 @@ export const signIn = async (req: Request, res: Response) => {
     });
 
     return res.status(200).json(user);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "signin error" });
   }
 };
@@ -109,7 +112,7 @@ export const sendOtp = async (req: Request, res: Response) => {
     await updateUserOtp({
       email,
       resetOtp: otp,
-      otpExpires: new Date(Date.now() + 5 * 60 * 1000),
+      otpExpires: Date.now() + 5 * 60 * 1000,
       isOtpVerified: false,
     });
 
@@ -125,30 +128,36 @@ export const sendOtp = async (req: Request, res: Response) => {
   /*==========================Verify OTP Controller Logic==============================*/
 }
 export const verifyOtp = async (req: Request, res: Response) => {
-  try {
-    const { email, otp } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
+  const otp = String(req.body.otp || "").trim();
 
-    const user = await getUserByEmail(email).catch(() => null);
-    if (
-      !user ||
-      user.resetOtp !== otp ||
-      !user.otpExpires ||
-      new Date(user.otpExpires) < new Date()
-    ) {
-      return res.status(400).json({ message: "invalid otp" });
-    }
+  console.log("VERIFY DEBUG =>", {
+    receivedOtp: req.body.otp,
+    normalizedOtp: otp,
+    type: typeof req.body.otp,
+  });
+  const user = await getUserByEmail(email).catch(() => null);
+  console.log("USER FETCH RESULT =>", user);
+  console.log("VERIFY EMAIL =>", email);
 
-    await updateUserOtp({
-      email,
-      resetOtp: null,
-      otpExpires: null,
-      isOtpVerified: true,
-    });
-
-    return res.status(200).json({ message: "otp verify successfully" });
-  } catch {
-    return res.status(500).json({ message: "verify otp error" });
+  if (
+    !user ||
+    !user.resetOtp ||
+    String(user.resetOtp) !== String(otp) ||
+    !user.otpExpires ||
+    user.otpExpires < Date.now()
+  ) {
+    return res.status(400).json({ message: "invalid or expired otp" });
   }
+
+  await updateUserOtp({
+    email,
+    resetOtp: null,
+    otpExpires: null,
+    isOtpVerified: true,
+  });
+
+  return res.status(200).json({ message: "otp verify successfully" });
 };
 
 {
@@ -174,6 +183,13 @@ export const resetPassword = async (req: Request, res: Response) => {
     await resetUserPassword({
       email,
       password: hashedPassword,
+    });
+
+    await updateUserOtp({
+      email,
+      resetOtp: null,
+      otpExpires: null,
+      isOtpVerified: false,
     });
 
     return res.status(200).json({ message: "password reset successfully" });
