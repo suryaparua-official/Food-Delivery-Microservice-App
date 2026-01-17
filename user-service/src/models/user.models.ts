@@ -8,7 +8,7 @@ export interface IUser extends Document {
   role: "user" | "owner" | "deliveryBoy";
   resetOtp?: string;
   isOtpVerified: boolean;
-  otpExpires?: Date;
+  otpExpires?: Number;
   socketId?: string;
   isOnline: boolean;
   location?: {
@@ -34,7 +34,7 @@ const userSchema = new Schema<IUser>(
       default: false,
     },
     otpExpires: {
-      type: Date,
+      type: Number,
     },
     socketId: {
       type: String,
@@ -56,7 +56,7 @@ const userSchema = new Schema<IUser>(
       },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.index({ location: "2dsphere" });
