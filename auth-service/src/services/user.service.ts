@@ -25,7 +25,7 @@ export const createUser = async (data: {
 export const updateUserOtp = async (data: {
   email: string;
   resetOtp: string | null;
-  otpExpires: Date | null;
+  otpExpires: Number | null;
   isOtpVerified: boolean;
 }) => {
   const res = await axios.patch(`${USER_SERVICE_URL}/otp`, data);
