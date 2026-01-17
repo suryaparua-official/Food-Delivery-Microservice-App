@@ -41,7 +41,7 @@ export const updateUserLocation = async (req: AuthRequest, res: Response) => {
           coordinates: [lon, lat],
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {
@@ -100,7 +100,7 @@ export const updateOtp = async (req: Request, res: Response) => {
     const user = await User.findOneAndUpdate(
       { email },
       { resetOtp, otpExpires, isOtpVerified },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {
@@ -123,7 +123,7 @@ export const resetUserPassword = async (req: Request, res: Response) => {
     const user = await User.findOneAndUpdate(
       { email },
       { password, isOtpVerified: false },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {
@@ -159,7 +159,7 @@ export const getNearbyDeliveryBoys = async (req: Request, res: Response) => {
             type: "Point",
             coordinates: [lng, lat],
           },
-          $maxDistance: 5000, // 5km radius
+          $maxDistance: 5000,
         },
       },
     }).select("_id");
@@ -231,7 +231,7 @@ export const setSocketOffline = async (req: Request, res: Response) => {
 
     await User.findOneAndUpdate(
       { socketId },
-      { socketId: null, isOnline: false }
+      { socketId: null, isOnline: false },
     );
 
     return res.status(200).json({ success: true });
